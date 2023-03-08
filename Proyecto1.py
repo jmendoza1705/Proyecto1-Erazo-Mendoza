@@ -96,7 +96,7 @@ for j in range(0, len(Pacientes)):
     plt.figure(figsize=(12, 4))
     plt.suptitle('Histogramas Pacientes Diagnosticados ' + f'{j}')
     for i in range(0, len(Pacientes[0][1])):
-        plt.subplot(2, 7, i+1)
+        plt.subplot(1, 3, i+1)
         plt.hist(Pacientes[j][:,i], bins = 15)
         plt.title(names[i])
     plt.tight_layout()
@@ -122,4 +122,26 @@ for j in range(0, len(Pacientes)):
         plt.subplot(2, 7, i+1)
         plt.violinplot(Pacientes[j][:,i])
         plt.title(names[i])
+    plt.tight_layout()
+
+######
+names= ["Age","Sex", "Chest Pain Type", "Resting Blood Pressure", "Serum Cholestorol", "Fasting Blood Sugar",
+        "Resting Electrocardiographic Results", "Maximum Heart Rate Achieved", "Exercise Induced Angina",
+        "ST Depression Induced by Exercise Relative to Rest", "Slope of the Peak Exercise ST Segment",
+        "Number of Major Vessels Colored by Flourosopy", "Thal = Reversable Defect",
+        "Diagnosis of Heart Disease"]
+nivel = ['No Heart Disease', 'Mild Heart Disease', 'Severe Heart Disease']
+labels = ['years', ' 1 = Male \n 0 = Female', ' 1: typical angina \n 2: atypical angina \n 3: non-anginal pain \n 4: asymptomatic',
+          r'mm Hg', r'mg/dl', ' 1 = > 120 $mg/dl$ \n 0 = < 120 $mg/dl$',
+          ' 0: Normal \n 1:  ST-T W.Abnormality \n 2: Left Vent.Hypertrophy',
+          'Max', ' 1 = Yes\n 0 = No', 'Depression', ' 1: Upsloping \n 2: Flat \n 3: Downsloping', 'Number of Vessels \n0- 3',
+          ' 3 = Normal\n 6 = Fixed Defect\n 7 = Reversable Defect', ' 0: No H.Disease \n 1: Mild H.Disease \n 2: Severe H.Disease']
+for i in range(0, len(names)):
+    plt.figure(figsize=(12, 4))
+    plt.suptitle(names[i])
+    for j in range(0, len(Pacientes)):
+        plt.subplot(1, 3, j + 1)
+        plt.hist(Pacientes[j][:, i], label = [labels[i]])
+        plt.title(nivel[j])
+        plt.legend(loc = 'upper right')
     plt.tight_layout()
