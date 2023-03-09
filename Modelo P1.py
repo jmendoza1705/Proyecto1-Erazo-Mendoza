@@ -89,13 +89,13 @@ for j in range(0, data.shape[0]):
 ## Se define el modelo
 
 # Se define la red bayesiana
-modelo_HD = BayesianNetwork([("AGE", "CHOL"), ("FBS", "CHOL"), ("CHOL", "HD"), ("CP", "HD"), ("THAL", "HD"), ("HD", "EXANG"),
+modelo_HD = BayesianNetwork([("AGE", "CHOL"), ("FBS", "CHOL"), ("CHOL", "HD"), ("THAL", "HD"), ("HD", "EXANG"),
                          ("HD", "OLDPEAK")])
 ##
 # Se definen las muestras
-info = np.zeros((296,8))
-columnas = [0, 2, 4, 5, 8, 9, 12, 13]
-nombres = ["AGE", "CP", "CHOL", "FBS", "EXANG", "OLDPEAK", "THAL", "HD"]
+info = np.zeros((296,7))
+columnas = [0, 4, 5, 8, 9, 12, 13]
+nombres = ["AGE", "CHOL", "FBS", "EXANG", "OLDPEAK", "THAL", "HD"]
 for i in range(len(columnas)):
     info[:,i] = data[:,columnas[i]]
 muestras = pd.DataFrame(info, columns = nombres)
@@ -109,8 +109,8 @@ for i in modelo_HD.nodes():
     print("CPD ", i,"\n", modelo_HD.get_cpds(i))
 ##
 #Se imprime completa la CDP HD
-for i in range(len(modelo_HD.get_cpds("CHOL").values)):
-    print(modelo_HD.get_cpds("CHOL").values[i])
+for i in range(len(modelo_HD.get_cpds("HD").values)):
+    print(modelo_HD.get_cpds("HD").values[i])
 
 ## FALTA PONER PSEUDOCOUNTS
 estimador = BayesianEstimator(model=modelo_HD, data=muestras)
@@ -118,6 +118,11 @@ estimador = BayesianEstimator(model=modelo_HD, data=muestras)
 # Se estima la CPD de robo utilizando un prior.
 cpd_HD_prior = estimador.estimate_cpd(node="HD", prior_type="dirichlet", pseudo_counts=[[200000, 200000],[200, 200]])
 print("CPD HD con prior: \n", cpd_HD_prior)
+
+
+
+
+
 
 
 
