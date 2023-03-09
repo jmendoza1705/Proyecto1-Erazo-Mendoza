@@ -145,3 +145,4 @@ for i in range(0, len(names)):
         plt.title(nivel[j])
         plt.legend(loc = 'upper right')
     plt.tight_layout()
+
