@@ -16,7 +16,7 @@ from pgmpy.sampling import BayesianModelSampling
 from pgmpy.estimators import MaximumLikelihoodEstimator
 from pgmpy.estimators import BayesianEstimator
 
-##
+
 # Se leen los datos
 data =  pd.read_csv("Proyecto 1/processed.cleveland.data", sep=",")
 data_names = open("Proyecto 1/heart-disease.names").read()
@@ -28,7 +28,7 @@ data = data.astype(float)
 
 data = data.dropna()
 data = data.to_numpy()
-## Se estandarizan las variables para el diagnostico:
+# Se estandarizan las variables para el diagnostico:
 # 0 -- No presenta heart disease
 # 1 -- mild heart disease
 # 3 -- severe heart disease
@@ -39,7 +39,7 @@ for j in range(0, data.shape[0]):
         data[j, 13] = 3
 
 
-## Discretizacion del colesterol
+# Discretizacion del colesterol
 # menos de 200 -- Deseable
 # de 200 a 239 -- En el limite superior
 # mas de 240 -- alto
@@ -53,7 +53,7 @@ for j in range(0, data.shape[0]):
     elif data[j, 4] >= 240:
         data[j, 4] = 2
 
-## Discretización de OldPeak
+# Discretización de OldPeak
 # Menos de 2 - 0
 # Entre 2 y 4 - 1
 # Mayor o igual a 4 - 2
@@ -67,7 +67,7 @@ for j in range(0, data.shape[0]):
         data[j, 9] = 2
 
 
-## Discretización de la edad
+# Discretización de la edad
 # 29 a 39 -- 30
 # 40 a 49 -- 40
 # 50 a 59 -- 50
@@ -86,12 +86,12 @@ for j in range(0, data.shape[0]):
     elif data[j, 0] >= 70 :
         data[j, 0] = 70
 
-## Se define el modelo
+#Se define el modelo
 
 # Se define la red bayesiana
 modelo_HD = BayesianNetwork([("AGE", "CHOL"), ("FBS", "CHOL"), ("CHOL", "HD"), ("THAL", "HD"), ("HD", "EXANG"),
                          ("HD", "OLDPEAK")])
-##
+
 # Se definen las muestras
 info = np.zeros((296,7))
 columnas = [0, 4, 5, 8, 9, 12, 13]
@@ -104,7 +104,8 @@ muestras = pd.DataFrame(info, columns = nombres)
 estimador_HD = MaximumLikelihoodEstimator(model=modelo_HD, data=muestras)
 
 #Estimación de las CPDs
-modelo_HD.fit(data=muestras, estimator = MaximumLikelihoodEstimator)
+modelo_HD.fit(data = muestras, estimator = MaximumLikelihoodEstimator)
+
 for i in modelo_HD.nodes():
     print("CPD ", i,"\n", modelo_HD.get_cpds(i))
 ##
@@ -112,9 +113,13 @@ for i in modelo_HD.nodes():
 for i in range(len(modelo_HD.get_cpds("HD").values)):
     print(modelo_HD.get_cpds("HD").values[i])
 
+####
+#Predicción con evidencia
 
-
-
+def EstimacionEvidencia(Edad, Glucosa, Colesterol, ST, Ex, Talasemia):
+    infer = VariableElimination(modelo_HD)
+    posterior_p = infer.query(["HD"], evidence={"AGE": Edad, "FBS": Glucosa, "CHOL": Colesterol,  "OLDPEAK": ST, "EXANG": Ex, "THAL": Talasemia})
+    return posterior_p
 
 
 

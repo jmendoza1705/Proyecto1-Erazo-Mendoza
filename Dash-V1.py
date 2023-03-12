@@ -4,7 +4,107 @@ from dash import Dash, dcc, html
 from dash.dependencies import Input, Output
 import plotly.express as px
 import pandas as pd
+import numpy as np
+from pgmpy.models import BayesianNetwork
+from pgmpy.inference import VariableElimination
+from pgmpy.estimators import MaximumLikelihoodEstimator
 
+def ModeloCalculado():
+    # Se leen los datos
+    data = pd.read_csv("Proyecto 1/processed.cleveland.data", sep=",")
+    data_names = open("Proyecto 1/heart-disease.names").read()
+    names = ["age", "sex", "cp", "trestbps", "chol", "fbs", "restecg", "thalach", "exang", "oldpeak", "slope", "ca",
+             "thal", "num"]
+    data.columns = names
+    data['ca'] = pd.to_numeric(data['ca'], errors='coerce')
+    data['thal'] = pd.to_numeric(data['thal'], errors='coerce')
+    data = data.astype(float)
+
+    data = data.dropna()
+    data = data.to_numpy()
+    # Se estandarizan las variables para el diagnostico:
+    # 0 -- No presenta heart disease
+    # 1 -- mild heart disease
+    # 3 -- severe heart disease
+    for j in range(0, data.shape[0]):
+        if data[j, 13] == 2:
+            data[j, 13] = 1
+        elif data[j, 13] == 4:
+            data[j, 13] = 3
+
+    # Discretizacion del colesterol
+    # menos de 200 -- Deseable
+    # de 200 a 239 -- En el limite superior
+    # mas de 240 -- alto
+    # https://www.mayoclinic.org/es-es/tests-procedures/cholesterol-test/about/pac-20384601
+
+    for j in range(0, data.shape[0]):
+        if data[j, 4] < 200:
+            data[j, 4] = 0
+        elif (200 <= data[j, 4] < 240):
+            data[j, 4] = 1
+        elif data[j, 4] >= 240:
+            data[j, 4] = 2
+
+    # Discretización de OldPeak
+    # Menos de 2 - 0
+    # Entre 2 y 4 - 1
+    # Mayor o igual a 4 - 2
+
+    for j in range(0, data.shape[0]):
+        if data[j, 9] < 2:
+            data[j, 9] = 0
+        elif (2 <= data[j, 9] < 4):
+            data[j, 9] = 1
+        elif data[j, 9] >= 4:
+            data[j, 9] = 2
+
+    # Discretización de la edad
+    # 29 a 39 -- 30
+    # 40 a 49 -- 40
+    # 50 a 59 -- 50
+    # 60 a 69 -- 60
+    # Mayor o igual a 70 -- 70
+
+    for j in range(0, data.shape[0]):
+        if (29 <= data[j, 0] < 40):
+            data[j, 0] = 30
+        elif (40 <= data[j, 0] < 50):
+            data[j, 0] = 40
+        elif (50 <= data[j, 0] < 60):
+            data[j, 0] = 50
+        elif (60 <= data[j, 0] < 70):
+            data[j, 0] = 60
+        elif data[j, 0] >= 70:
+            data[j, 0] = 70
+
+    # Se define el modelo
+
+    # Se define la red bayesiana
+    modelo_HD = BayesianNetwork([("AGE", "CHOL"), ("FBS", "CHOL"), ("CHOL", "HD"), ("THAL", "HD"), ("HD", "EXANG"),
+                                 ("HD", "OLDPEAK")])
+
+    # Se definen las muestras
+    info = np.zeros((296, 7))
+    columnas = [0, 4, 5, 8, 9, 12, 13]
+    nombres = ["AGE", "CHOL", "FBS", "EXANG", "OLDPEAK", "THAL", "HD"]
+    for i in range(len(columnas)):
+        info[:, i] = data[:, columnas[i]]
+    muestras = pd.DataFrame(info, columns=nombres)
+
+    # Estimador de máxima verosimilitud
+    estimador_HD = MaximumLikelihoodEstimator(model=modelo_HD, data=muestras)
+
+    # Estimación de las CPDs
+    modelo_HD.fit(data=muestras, estimator=MaximumLikelihoodEstimator)
+    return modelo_HD
+
+
+modelo_HD = ModeloCalculado()
+def EstimacionEvidencia(Edad, Glucosa, Colesterol, ST, Ex, Talasemia):
+    infer = VariableElimination(modelo_HD)
+    posterior_p = infer.query(["HD"], evidence={"AGE": Edad, "FBS": Glucosa, "CHOL": Colesterol,  "OLDPEAK": ST, "EXANG": Ex, "THAL": Talasemia})
+    return posterior_p
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -73,7 +173,7 @@ app.layout = html.Div(children=[
     html.Div("1: Sí / 2: No"),
     html.Div([
         dcc.Dropdown(
-            id='EXANG',
+            id='Ex',
             options=[{'label': i, 'value': i} for i in [1, 2]])], style={'width': '35%'}),
 
     html.Div(html.H6("Talasemia (THAL)", style={"color": "#521383"})),
@@ -100,10 +200,30 @@ app.layout = html.Div(children=[
      Input('Glucosa', 'value'),
      Input('Colesterol', 'value'),
      Input('ST', 'value'),
-     Input('EXANG', 'value'),
+     Input('Ex', 'value'),
      Input('Talasemia', 'value')])
 
-def update_output_div(Edad, Glucosa, Colesterol, ST, EXANG, Talasemia):
+def update_output_div(Edad, Glucosa, Colesterol, ST, Ex, Talasemia):
+    valores = EstimacionEvidencia(Edad, Glucosa, Colesterol, ST, Ex, Talasemia).values.tolist()
+    heart = ['No Heart Disease', 'Mild Heart Disease', 'Severe Heart Disease']
+    dict2 = {'Nivel Enfermedad Cardiaca': heart, 'Probabilidad Estimada': valores}
+    data = pd.DataFrame(dict2)
+
+    fig = px.bar(data, x='Nivel Enfermedad Cardiaca', y='Probabilidad Estimada', height=500, text_auto=True)
+    fig.update_traces(marker_color='thistle')
+    fig.update_layout(width = 900, bargap = 0.6,
+                      plot_bgcolor="rgba(255,255,255,255)",
+                      title_text='Probabilidad Estimada Enfermedad Cardiaca', title_x=0.5)
+
+    fig.update_xaxes(range=[-0.5, 2.5], showline=True, linewidth=1, linecolor='black', mirror=True)
+    fig.update_yaxes(showline=True, linewidth=1, linecolor='black', mirror=True)
+
+
+
+
+
+
+
     fig = px.bar(Edad)
     return fig
 
