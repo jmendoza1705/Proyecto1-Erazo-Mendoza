@@ -1,4 +1,4 @@
-
+##
 import matplotlib.pyplot as plt
 
 colesterol = [0,1,2]
@@ -21,3 +21,30 @@ plt.ylim([0, max(valores) + 0.05])
 plt.text(x = -0.16, y = valores[0] + 0.01, s = 'p = ' + f'{valores[0]}', fontstyle = 'italic', fontfamily = 'monospace', color = 'dimgrey')
 plt.text(x = 0.83, y = valores[1] + 0.01, s = 'p = ' + f'{valores[1]}', fontstyle = 'italic', fontfamily = 'monospace', color = 'dimgrey')
 plt.text(x = 1.83, y = valores[2] + 0.01, s = 'p = ' + f'{valores[2]}', fontstyle = 'italic', fontfamily = 'monospace', color = 'dimgrey')
+
+#####
+
+import plotly.express as px
+import pandas as pd
+import plotly.io as pio
+pio.renderers.default = "browser"
+
+heart = ['No Heart Disease', 'Mild Heart Disease', 'Severe Heart Disease']
+dict2 = {'Nivel Enfermedad Cardiaca' : heart, 'Probabilidad Estimada' : valores}
+data = pd.DataFrame(dict2)
+
+fig = px.bar(data, x = 'Nivel Enfermedad Cardiaca', y = 'Probabilidad Estimada',height=500, text_auto=True)
+fig.update_traces(marker_color='thistle')
+fig.update_layout(width = 900, bargap = 0.6,
+                  plot_bgcolor = "rgba(255,255,255,255)",
+                  title_text = 'Probabilidad Estimada Enfermedad Cardiaca', title_x = 0.5)
+
+fig.update_xaxes(range=[-0.5, 2.5],showline=True, linewidth = 1, linecolor = 'black', mirror = True)
+fig.update_yaxes(showline = True, linewidth=1, linecolor = 'black', mirror = True)
+
+
+fig.show()
+
+
+##
+

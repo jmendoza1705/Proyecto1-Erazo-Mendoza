@@ -112,13 +112,6 @@ for i in modelo_HD.nodes():
 for i in range(len(modelo_HD.get_cpds("HD").values)):
     print(modelo_HD.get_cpds("HD").values[i])
 
-## FALTA PONER PSEUDOCOUNTS
-estimador = BayesianEstimator(model=modelo_HD, data=muestras)
-
-# Se estima la CPD de robo utilizando un prior.
-cpd_HD_prior = estimador.estimate_cpd(node="HD", prior_type="dirichlet", pseudo_counts=[[200000, 200000],[200, 200]])
-print("CPD HD con prior: \n", cpd_HD_prior)
-
 
 
 
