@@ -5,17 +5,12 @@
 # la toma de decisiones asociada (solicitud de exámenes, chequeos y otros procedimientos).
 
 # Se importan las librerias
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import seaborn as sns
 from pgmpy.models import BayesianNetwork
-from pgmpy.factors.discrete import TabularCPD
 from pgmpy.inference import VariableElimination
-from pgmpy.sampling import BayesianModelSampling
 from pgmpy.estimators import MaximumLikelihoodEstimator
-from pgmpy.estimators import BayesianEstimator
-
 
 # Se leen los datos
 data =  pd.read_csv("Proyecto 1/processed.cleveland.data", sep=",")
@@ -26,8 +21,10 @@ data['ca'] = pd.to_numeric(data['ca'], errors='coerce')
 data['thal'] = pd.to_numeric(data['thal'], errors='coerce')
 data = data.astype(float)
 
+# Se eliminan los Nan y se convierte a un arreglo de Numpy
 data = data.dropna()
 data = data.to_numpy()
+
 # Se estandarizan las variables para el diagnostico:
 # 0 -- No presenta heart disease
 # 1 -- mild heart disease
@@ -100,27 +97,27 @@ for i in range(len(columnas)):
     info[:,i] = data[:,columnas[i]]
 muestras = pd.DataFrame(info, columns = nombres)
 
-# Estimador de máxima verosimilitud
-estimador_HD = MaximumLikelihoodEstimator(model=modelo_HD, data=muestras)
-
 #Estimación de las CPDs
 modelo_HD.fit(data = muestras, estimator = MaximumLikelihoodEstimator)
-
 for i in modelo_HD.nodes():
     print("CPD ", i,"\n", modelo_HD.get_cpds(i))
-##
+
 #Se imprime completa la CDP HD
 for i in range(len(modelo_HD.get_cpds("HD").values)):
     print(modelo_HD.get_cpds("HD").values[i])
 
-####
-#Predicción con evidencia
+# Se realiza la eliminación de variables
+infer = VariableElimination(modelo_HD)
 
-def EstimacionEvidencia(Edad, Glucosa, Colesterol, ST, Ex, Talasemia):
-    infer = VariableElimination(modelo_HD)
-    posterior_p = infer.query(["HD"], evidence={"AGE": Edad, "FBS": Glucosa, "CHOL": Colesterol,  "OLDPEAK": ST, "EXANG": Ex, "THAL": Talasemia})
-    return posterior_p
+# Se definen valores para los parámetros para la predicción
+age = 50
+Fbs = 1
+Chol = 0
+st = 1
+ex = 0
+tal = 3
 
-
-
+# Se realiza la predicción teniendo en cuenta la evidencia
+posterior_p = infer.query(["HD"], evidence={"AGE": age, "FBS": Fbs, "CHOL": Chol,  "OLDPEAK": st, "EXANG": ex, "THAL": tal})
+print(posterior_p)
 
