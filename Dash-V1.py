@@ -1,13 +1,14 @@
 import dash
 from dash import dcc  # dash core components
-from dash import Dash, dcc, html
-from dash.dependencies import Input, Output
+from dash import dcc, html
+from dash.dependencies import Input, Output, State
 import plotly.express as px
 import pandas as pd
 import numpy as np
 from pgmpy.models import BayesianNetwork
 from pgmpy.inference import VariableElimination
 from pgmpy.estimators import MaximumLikelihoodEstimator
+from dash.exceptions import PreventUpdate
 
 def ModeloCalculado():
     # Se leen los datos
@@ -92,19 +93,15 @@ def ModeloCalculado():
         info[:, i] = data[:, columnas[i]]
     muestras = pd.DataFrame(info, columns=nombres)
 
-    # Estimador de máxima verosimilitud
-    estimador_HD = MaximumLikelihoodEstimator(model=modelo_HD, data=muestras)
 
     # Estimación de las CPDs
     modelo_HD.fit(data=muestras, estimator=MaximumLikelihoodEstimator)
-    return modelo_HD
-
-
-modelo_HD = ModeloCalculado()
-def EstimacionEvidencia(Edad, Glucosa, Colesterol, ST, Ex, Talasemia):
+    modelo_HD.check_model()
     infer = VariableElimination(modelo_HD)
-    posterior_p = infer.query(["HD"], evidence={"AGE": Edad, "FBS": Glucosa, "CHOL": Colesterol,  "OLDPEAK": ST, "EXANG": Ex, "THAL": Talasemia})
-    return posterior_p
+    return infer
+
+modelo_prediccion = ModeloCalculado()
+
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -142,7 +139,7 @@ app.layout = html.Div(children=[
     html.Div([
         dcc.Dropdown(
             id='Edad',
-            options=[{'label': i, 'value': i} for i in [30, 40, 50, 60, 70]])], style={'width': '35%'}),
+            options=[{'label': i, 'value': i} for i in [30, 40, 50, 60, 70]])], style={'width': '35%','display': 'inline-block'}),
 
 
     html.Div(html.H6("Glucosa (FBS)", style={"color": "#521383"})),
@@ -150,7 +147,7 @@ app.layout = html.Div(children=[
     html.Div([
         dcc.Dropdown(
             id='Glucosa',
-            options=[{'label': i, 'value': i} for i in [0, 1]])], style={'width': '35%'})], style= {'columnCount': 2}),
+            options=[{'label': i, 'value': i} for i in [0, 1]])], style={'width': '35%','display': 'inline-block'})], style= {'columnCount': 2}),
 
     html.Div([
     html.Div(html.H6("Colesterol (CHOL)", style={"color": "#521383"})),
@@ -158,7 +155,7 @@ app.layout = html.Div(children=[
     html.Div([
         dcc.Dropdown(
             id='Colesterol',
-            options=[{'label': i, 'value': i} for i in [0, 1, 2]])], style={'width': '35%'}),
+            options=[{'label': i, 'value': i} for i in [0, 1, 2]])], style={'width': '35%','display': 'inline-block'}),
 
 
     html.Div(html.H6("ST (OLDPEAK)", style={"color": "#521383"})),
@@ -166,47 +163,54 @@ app.layout = html.Div(children=[
     html.Div([
         dcc.Dropdown(
             id='ST',
-            options=[{'label': i, 'value': i} for i in [0, 1, 2]])], style={'width': '35%'})], style= {'columnCount': 2}),
+            options=[{'label': i, 'value': i} for i in [0, 1, 2]])], style={'width': '35%','display': 'inline-block'})], style= {'columnCount': 2}),
 
     html.Div([
     html.Div(html.H6("Angina (EXANG)", style={"color": "#521383"})),
-    html.Div("1: Sí / 2: No"),
+    html.Div("0: No / 1: Sí"),
     html.Div([
         dcc.Dropdown(
             id='Ex',
-            options=[{'label': i, 'value': i} for i in [1, 2]])], style={'width': '35%'}),
+            options=[{'label': i, 'value': i} for i in [0, 1]])], style={'width': '35%','display': 'inline-block'}),
 
     html.Div(html.H6("Talasemia (THAL)", style={"color": "#521383"})),
     html.Div("3: Normal / 6: Defecto fijo / 7: Defecto reversible"),
     html.Div([
         dcc.Dropdown(
             id='Talasemia',
-            options=[{'label': i, 'value': i} for i in [3, 6, 7]])], style={'width': '35%'})], style= {'columnCount': 2}),
-
+            options=[{'label': i, 'value': i} for i in [3, 6, 7]])], style={'width': '35%','display': 'inline-block'})], style= {'columnCount': 2}),
 
     html.Div([
         html.Br(),
         html.Br(),
-        html.Button('Realizar predicción', id='button'),
+        html.Button('Realizar predicción', id='button', n_clicks=0),
         dcc.Interval(id='interval', interval=500)]),
 
-    dcc.Graph(id='graph-prob')
+    html.Div([
+    html.Br(),
+    html.Br(),
+    dcc.Graph(id='graph-prob')]),
 
 ])
 
 @app.callback(
     Output('graph-prob', "figure"),
-    [Input('Edad', 'value'),
-     Input('Glucosa', 'value'),
-     Input('Colesterol', 'value'),
-     Input('ST', 'value'),
-     Input('Ex', 'value'),
-     Input('Talasemia', 'value')])
+    [Input('button', "n_clicks")],
+    [State('Edad', 'value'),
+     State('Glucosa', 'value'),
+     State('Colesterol', 'value'),
+     State('ST', 'value'),
+     State('Ex', 'value'),
+     State('Talasemia', 'value')],prevent_initial_call=True)
 
-def update_output_div(Edad, Glucosa, Colesterol, ST, Ex, Talasemia):
-    valores = EstimacionEvidencia(Edad, Glucosa, Colesterol, ST, Ex, Talasemia).values.tolist()
+def update_figure(n_clicks, age, Fbs, Chol, st, ex, tal):
+    modelo = ModeloCalculado()
+    pred = modelo.query(["HD"], evidence={"AGE": age, "FBS": Fbs, "CHOL": Chol, "OLDPEAK": st, "EXANG": ex, "THAL": tal})
+    valores1 = round(pred.values[0],2)
+    valores2 = round(pred.values[1],2)
+    valores3 = round(pred.values[2],2)
     heart = ['No Heart Disease', 'Mild Heart Disease', 'Severe Heart Disease']
-    dict2 = {'Nivel Enfermedad Cardiaca': heart, 'Probabilidad Estimada': valores}
+    dict2 = {'Nivel Enfermedad Cardiaca': heart, 'Probabilidad Estimada': [valores1, valores2, valores3] }
     data = pd.DataFrame(dict2)
 
     fig = px.bar(data, x='Nivel Enfermedad Cardiaca', y='Probabilidad Estimada', height=500, text_auto=True)
@@ -218,24 +222,8 @@ def update_output_div(Edad, Glucosa, Colesterol, ST, Ex, Talasemia):
     fig.update_xaxes(range=[-0.5, 2.5], showline=True, linewidth=1, linecolor='black', mirror=True)
     fig.update_yaxes(showline=True, linewidth=1, linecolor='black', mirror=True)
 
-
-
-
-
-
-
-    fig = px.bar(Edad)
     return fig
+
 
 if __name__ == '__main__':
     app.run_server(debug=True, use_reloader=False, port=9877)
-
-   ##
-@app.callback(
-    Output(component_id='my-output', component_property='children'),
-    [Input(component_id='my-input', component_property='value')]
-)
-def update_output_div(input_value):
-    return 'Output: {}'.format(input_value)
-
-
