@@ -11,6 +11,7 @@ import numpy as np
 from pgmpy.models import BayesianNetwork
 from pgmpy.inference import VariableElimination
 from pgmpy.estimators import MaximumLikelihoodEstimator
+import math
 
 # Se crea una función que estima el modelo completo con las muestras
 def ModeloCalculado():
@@ -130,11 +131,11 @@ app.layout = html.Div(children=[
     # Explicación de los parámetros utilizads
     html.Div(html.H6(dcc.Markdown('''
     * **Edad (Age):** Edad del paciente (años).
-    * **Glucosa (FBS):** Nivel de glucosa en sangre en ayunas mayor a 120 mg/dl.
-    * **Colesterol (CHOL):** Valor de colesterol total en sangre (mg/dl).
-    * **ST (OLDPEAK):** Depresión del ST inducida por el ejercicio en relación con el reposo.
-    * **Angina (EXANG):** Angina inducida por el ejercicio. 
-    * **Talasemia (THAL):** Tipo de talasemia.
+    * **Glucosa (Fbs):** Nivel de glucosa en sangre en ayunas mayor a 120 mg/dL.
+    * **Colesterol (Chol):** Valor de colesterol total en sangre (mg/dL).
+    * **ST (Oldpeak):** Depresión del ST inducida por el ejercicio en relación con el reposo.
+    * **Angina (Exang):** Angina inducida por el ejercicio. 
+    * **Talasemia (Thal):** Tipo de talasemia.
     '''))),
 
     # Sección que indica la instrucción a seguir
@@ -152,7 +153,7 @@ app.layout = html.Div(children=[
             options=[{'label': i, 'value': i} for i in [30, 40, 50, 60, 70]])], style={'width': '35%','display': 'inline-block'}),
 
 
-    html.Div(html.H6("Glucosa (FBS)", style={"color": "#521383"})),
+    html.Div(html.H6("Glucosa (Fbs)", style={"color": "#521383"})),
     html.Div("0: No / 1: Sí"),
     html.Div([
         dcc.Dropdown(
@@ -160,7 +161,7 @@ app.layout = html.Div(children=[
             options=[{'label': i, 'value': i} for i in [0, 1]])], style={'width': '35%','display': 'inline-block'})], style= {'columnCount': 2}),
 
     html.Div([
-    html.Div(html.H6("Colesterol (CHOL)", style={"color": "#521383"})),
+    html.Div(html.H6("Colesterol (Chol)", style={"color": "#521383"})),
     html.Div("0: menos de 200 / 1: Entre 200 y 239 / 2: Mayor o igual a 240"),
     html.Div([
         dcc.Dropdown(
@@ -168,7 +169,7 @@ app.layout = html.Div(children=[
             options=[{'label': i, 'value': i} for i in [0, 1, 2]])], style={'width': '35%','display': 'inline-block'}),
 
 
-    html.Div(html.H6("ST (OLDPEAK)", style={"color": "#521383"})),
+    html.Div(html.H6("ST (Oldpeak)", style={"color": "#521383"})),
     html.Div("0: Menos de 2 / 1: Entre 2 y 4 / 2: Mayor o igual a 4"),
     html.Div([
         dcc.Dropdown(
@@ -176,14 +177,14 @@ app.layout = html.Div(children=[
             options=[{'label': i, 'value': i} for i in [0, 1, 2]])], style={'width': '35%','display': 'inline-block'})], style= {'columnCount': 2}),
 
     html.Div([
-    html.Div(html.H6("Angina (EXANG)", style={"color": "#521383"})),
+    html.Div(html.H6("Angina (Exang)", style={"color": "#521383"})),
     html.Div("0: No / 1: Sí"),
     html.Div([
         dcc.Dropdown(
             id='Ex',
             options=[{'label': i, 'value': i} for i in [0, 1]])], style={'width': '35%','display': 'inline-block'}),
 
-    html.Div(html.H6("Talasemia (THAL)", style={"color": "#521383"})),
+    html.Div(html.H6("Talasemia (Thal)", style={"color": "#521383"})),
     html.Div("3: Normal / 6: Defecto fijo / 7: Defecto reversible"),
     html.Div([
         dcc.Dropdown(
@@ -232,9 +233,14 @@ def update_figure(n_clicks, age, Fbs, Chol, st, ex, tal):
     # Se crea la gráfica de barras
     fig = px.bar(data, x='Nivel Enfermedad Cardiaca', y='Probabilidad Estimada', height=500, text_auto=True)
     fig.update_traces(marker_color='thistle')
-    fig.update_layout(width = 900, bargap = 0.6,
-                      plot_bgcolor="rgba(255,255,255,255)",
-                      title_text='Probabilidad Estimada Enfermedad Cardiaca', title_x=0.5)
+    if math.isnan(valores1) or math.isnan(valores2) or math.isnan(valores3):
+        fig.update_layout(width=900, bargap=0.6,
+                          plot_bgcolor="rgba(255,255,255,255)",
+                          title_text='No es posible calcular la probabilidad con los datos ingresados', title_x=0.5)
+    else:
+        fig.update_layout(width=900, bargap=0.6,
+                          plot_bgcolor="rgba(255,255,255,255)",
+                          title_text='Probabilidad Estimada Enfermedad Cardiaca', title_x=0.5)
 
     fig.update_xaxes(range=[-0.5, 2.5], showline=True, linewidth=1, linecolor='black', mirror=True)
     fig.update_yaxes(showline=True, linewidth=1, linecolor='black', mirror=True)
