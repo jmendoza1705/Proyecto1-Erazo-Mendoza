@@ -13,8 +13,7 @@ from pgmpy.inference import VariableElimination
 from pgmpy.estimators import MaximumLikelihoodEstimator
 
 # Se leen los datos
-data =  pd.read_csv("Proyecto 1/processed.cleveland.data", sep=",")
-data_names = open("Proyecto 1/heart-disease.names").read()
+data =  pd.read_csv('https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data', header=None)
 names= ["age","sex", "cp", "trestbps", "chol", "fbs", "restecg", "thalach", "exang", "oldpeak", "slope","ca", "thal", "num"]
 data.columns = names
 data['ca'] = pd.to_numeric(data['ca'], errors='coerce')
@@ -90,7 +89,7 @@ modelo_HD = BayesianNetwork([("AGE", "CHOL"), ("FBS", "CHOL"), ("CHOL", "HD"), (
                          ("HD", "OLDPEAK")])
 
 # Se definen las muestras
-info = np.zeros((296,7))
+info = np.zeros((297,7))
 columnas = [0, 4, 5, 8, 9, 12, 13]
 nombres = ["AGE", "CHOL", "FBS", "EXANG", "OLDPEAK", "THAL", "HD"]
 for i in range(len(columnas)):

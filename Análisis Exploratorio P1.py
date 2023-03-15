@@ -18,8 +18,7 @@ from pgmpy.estimators import BayesianEstimator
 
 ##
 # Se leen los datos
-data =  pd.read_csv("Proyecto 1/processed.cleveland.data", sep=",")
-data_names = open("Proyecto 1/heart-disease.names").read()
+data =  pd.read_csv('https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data', header=None)
 names= ["age","sex", "cp", "trestbps", "chol", "fbs", "restecg", "thalach", "exang", "oldpeak", "slope","ca", "thal", "num"]
 data.columns = names
 data['ca'] = pd.to_numeric(data['ca'], errors='coerce')
